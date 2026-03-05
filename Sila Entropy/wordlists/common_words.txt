@@ -1,0 +1,9 @@
+# Common words
+hello
+admin
+welcome
+password
+love
+dragon
+monkey
+football
