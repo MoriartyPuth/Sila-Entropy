@@ -1,18 +1,25 @@
 # SILA Entropy
 
 ![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)
-![NIST 800-63B](https://img.shields.io/badge/NIST-800--63B-green.svg)
-![Status](https://img.shields.io/badge/status-active-brightgreen)
+![NIST 2026 Compliant](https://img.shields.io/badge/NIST-800--63B--4-green.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-Password strength auditing tool with:
-- breach checking (HIBP k-anonymity),
-- entropy + pattern-aware analysis,
-- optional zxcvbn guessability,
-- scenario-based offline/online crack-time estimation.
+<img width="879" height="314" alt="image" src="https://github.com/user-attachments/assets/87429d50-33d5-4d44-8dd8-debf48f12a62" />
 
-This project is designed for password strength evaluation, not as a standalone authentication defense system.
+SILA Entropy is a high-fidelity password auditing suite designed for the Ministry of Interior. It utilizes multi-model estimation, Khmer linguistic threat analysis, and k-anonymity breach detection to provide a 2026-standard security verdict.
 
-## Features
+---
+## 🛰️ Core Capabilities
+* Breach Intelligence: Real-time $k$-anonymity interrogation via the Have I Been Pwned API.
+* Multi-Model Estimation: * Brute-Force: Mathematical entropy vs. State-level GPU clusters ($10^{11}$ guesses/sec).
+* Pattern-Aware: Detection of "human habits" (trailing digits, leetspeak).
+* Guessability: Deep analysis via zxcvbn with pattern_fallback.
+* Localized Threat Model: Specialized Khmer dictionary integration to detect regional password patterns.
+* NIST 2026 Ready: Built-in compliance checking for the 15-character security floor.
+* Confidence Bands: Best, Expected, and Worst-case "Time-to-Entry" (ETE) scenarios.
+
+
+## 🧪 Features
 
 - Strength tiers: `Very Weak`, `Weak`, `Moderate`, `Strong`
 - Breach status via Have I Been Pwned (Pwned Passwords API)
@@ -24,23 +31,9 @@ This project is designed for password strength evaluation, not as a standalone a
 - All-scenario mode tests all combinations of hash profile, attacker scale, and online defense profile
 - Confidence bands: best / expected / worst
 
-## Project Structure
-
-```text
-.
-|- sila.py              # Facade + main entrypoint
-|- sila_cli.py          # Terminal UI / workflow
-|- sila_analysis.py     # Strength labels, verdict logic, explanation output
-|- sila_models.py       # Entropy, timing, pattern and guess models
-|- sila_breach.py       # HIBP + dictionary loading
-|- sila_config.py       # Constants, profiles, wordlist loading
-|- wordlists/
-|  |- rockyou.txt.example
-|  `- common_words.txt
-`- test_sila.py         # Unit tests
-```
-
-## Requirements
+---
+## 🚀 Getting Started
+### Requirements
 
 - Python 3.9+
 - Packages:
@@ -48,7 +41,7 @@ This project is designed for password strength evaluation, not as a standalone a
   - `rich`
   - `zxcvbn` (optional but recommended)
 
-Install:
+### Install:
 
 ```bash
 pip install requests rich zxcvbn
@@ -56,7 +49,7 @@ pip install requests rich zxcvbn
 
 If `zxcvbn` is not installed, the app automatically uses `pattern_fallback`.
 
-## Usage
+### Usage
 
 ```bash
 python sila.py
@@ -69,9 +62,9 @@ The app will:
 4. Show a concise results table
 5. Show a detailed explanation panel for the first target
 
-## Wordlists
+### Wordlists
 
-`COMMON_PASSWORDS` loads from `wordlists/rockyou.txt`.
+`COMMON_PASSWORDS` now loads from `wordlists/rockyou.txt`.
 
 ### rockyou Setup
 
@@ -81,13 +74,13 @@ The app will:
    - `.gitignore` already excludes `wordlists/rockyou.txt`
 3. Tune load size in `sila_config.py`:
    - `ROCKYOU_MAX_WORDS = 1_000_000`
-   - use `max_words=None` in loader call for full-file load
+   - `max_words = None` (full file load).
 4. If missing, SILA falls back to a built-in minimal password set.
 
 `COMMON_WORDS` loads from:
 - `wordlists/common_words.txt`
 
-## Configuration
+### Configuration
 
 Edit `sila_config.py` for:
 - `NIST_MIN_LENGTH`
@@ -96,13 +89,17 @@ Edit `sila_config.py` for:
 - `ONLINE_DEFENSE`
 - `ROCKYOU_MAX_WORDS`
 
-## Testing
+### Testing
 
 ```bash
 python -m unittest -v
 ```
 
-## Notes and Limits
+## 📋 Notes and Limits
 
 - This tool estimates password strength/risk; it cannot provide exact crack-time guarantees.
 - Real-world security still depends on operational controls such as MFA, lockout/rate limiting, secure hashing parameters, and monitoring.
+
+## ⚠️ Disclaimer
+
+This tool is designed for security evaluation and auditing purposes only. While SILA provides high-accuracy estimations, real-world security requires a defense-in-depth approach including MFA (FIDO2/Passkeys), rate-limiting, and continuous monitoring.
