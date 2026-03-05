@@ -1,0 +1,7 @@
+# Place your rockyou wordlist here as:
+#   wordlists/rockyou.txt
+#
+# This example file is intentionally small and safe for git.
+# The real rockyou.txt is ignored by .gitignore.
+#
+# If rockyou.txt is missing, the app falls back to built-in defaults.
