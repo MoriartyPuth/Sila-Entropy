@@ -62,6 +62,7 @@ class TestSilaCore(unittest.TestCase):
             )
         )
         self.assertFalse(sila.contains_khmer_dictionary_term("xxpasswordyy", khmer_dict))
+        self.assertTrue(sila.contains_khmer_dictionary_term("phnompenh@123", set()))
 
     def test_summarize_breach_error(self):
         breach = sila.summarize_breach_status({"status": "error", "count": None, "error": "timeout"})
@@ -132,6 +133,27 @@ class TestSilaCore(unittest.TestCase):
         guess_window = sila.estimate_guessability_guess_window("hello123456789", pattern)
         self.assertIn(guess_window["source"], {"zxcvbn", "pattern_fallback"})
         self.assertGreaterEqual(guess_window["expected_guesses"], 1)
+
+    def test_precomputed_assessment_matches_standard(self):
+        password = "hello123456789"
+        entropy, _, _ = sila.get_metrics(password)
+        standard = sila.build_attack_assessment(password, entropy)
+        pattern_guesses, guessability = sila.precompute_password_models(password, entropy)
+        optimized = sila.build_attack_assessment_with_components(
+            entropy=entropy,
+            offline_rate=sila.get_offline_guesses_per_second(),
+            online_rate=sila.get_online_guesses_per_second(),
+            pattern_guesses=pattern_guesses,
+            guessability=guessability,
+        )
+        self.assertEqual(
+            standard["offline_conservative"]["expected"],
+            optimized["offline_conservative"]["expected"],
+        )
+        self.assertEqual(
+            standard["online_conservative"]["expected"],
+            optimized["online_conservative"]["expected"],
+        )
 
     def test_guessability_engine_name(self):
         self.assertIn(sila.get_guessability_engine_name(), {"zxcvbn", "pattern_fallback"})

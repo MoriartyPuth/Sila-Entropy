@@ -1,4 +1,5 @@
 from sila_analysis import (
+    build_attack_assessment_with_components,
     build_attack_assessment,
     calculate_ete,
     contains_khmer_dictionary_term,
@@ -8,6 +9,7 @@ from sila_analysis import (
     get_guessability_engine_name,
     get_strength_label,
     mask_secret,
+    precompute_password_models,
     summarize_breach_status,
 )
 from sila_breach import check_pwned_api, load_khmer_dict

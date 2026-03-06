@@ -33,6 +33,7 @@ LEET_MAP = str.maketrans(
 WORDLIST_DIR = Path(__file__).resolve().parent / "wordlists"
 COMMON_PASSWORDS_FILE = WORDLIST_DIR / "common_passwords.txt"
 COMMON_WORDS_FILE = WORDLIST_DIR / "common_words.txt"
+LOCAL_THREAT_TERMS_FILE = WORDLIST_DIR / "local_threat_terms.txt"
 
 
 def _load_wordlist(path, fallback):
@@ -70,8 +71,22 @@ _COMMON_WORDS_FALLBACK = {
     "football",
 }
 
+_LOCAL_THREAT_TERMS_FALLBACK = {
+    "khmer",
+    "cambodia",
+    "kampuchea",
+    "phnompenh",
+    "angkor",
+    "siemreap",
+    "sokha",
+    "chantha",
+}
+
 COMMON_PASSWORDS = _load_wordlist(COMMON_PASSWORDS_FILE, _COMMON_PASSWORDS_FALLBACK)
 COMMON_WORDS = _load_wordlist(COMMON_WORDS_FILE, _COMMON_WORDS_FALLBACK)
+LOCAL_THREAT_TERMS = _load_wordlist(
+    LOCAL_THREAT_TERMS_FILE, _LOCAL_THREAT_TERMS_FALLBACK
+)
 
 BRAND_LOGO = r"""
   _____ ___ _        _      _____ _   _ _______ _____   ____  _______   __

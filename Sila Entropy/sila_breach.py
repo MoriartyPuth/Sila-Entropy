@@ -1,5 +1,7 @@
 import hashlib
 import os
+from pathlib import Path
+import re
 
 import requests
 
@@ -7,12 +9,24 @@ from sila_config import HIBP_ENDPOINT
 
 
 def load_khmer_dict(path="khmer_dict.txt"):
-    """Load Khmer dictionary terms (length > 3) from a local file."""
-    if not os.path.exists(path):
-        return set()
+    """Load optional local dictionary terms, excluding Khmer-script entries."""
+    candidates = [Path(path)]
+    terms = set()
+    khmer_re = re.compile(r"[\u1780-\u17FF]")
 
-    with open(path, "r", encoding="utf-8") as f:
-        return {line.strip().lower() for line in f if len(line.strip()) > 3}
+    for candidate in candidates:
+        if not candidate.exists():
+            continue
+        with open(candidate, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                term = line.strip().lower()
+                if len(term) <= 1:
+                    continue
+                if khmer_re.search(term):
+                    continue
+                terms.add(term)
+
+    return terms
 
 
 def check_pwned_api(password):

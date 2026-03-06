@@ -2,10 +2,11 @@ import math
 from itertools import product
 
 from sila_analysis import (
-    build_attack_assessment,
+    build_attack_assessment_with_components,
     contains_khmer_dictionary_term,
     get_guessability_engine_name,
     get_expert_analysis,
+    precompute_password_models,
     get_strength_label,
     mask_secret,
     summarize_breach_status,
@@ -26,11 +27,15 @@ def _build_all_scenarios():
     for hash_profile, attacker_profile, online_defense in product(
         HASH_PROFILES.keys(), ATTACKER_SCALE.keys(), ONLINE_DEFENSE.keys()
     ):
+        offline_rate = get_offline_guesses_per_second(hash_profile, attacker_profile)
+        online_rate = get_online_guesses_per_second(online_defense)
         scenarios.append(
             {
                 "hash_profile": hash_profile,
                 "attacker_profile": attacker_profile,
                 "online_defense": online_defense,
+                "offline_rate": offline_rate,
+                "online_rate": online_rate,
             }
         )
     return scenarios
@@ -87,33 +92,44 @@ def run_audit():
         nist_status = "[green]PASS[/]" if len(password) >= NIST_MIN_LENGTH else "[red]FAIL[/]"
         breach_text = summarize_breach_status(leak_result)
 
-        scenario_assessments = []
-        for scenario in scenarios:
-            assessment = build_attack_assessment(
-                password,
-                entropy,
-                hash_profile=scenario["hash_profile"],
-                attacker_profile=scenario["attacker_profile"],
-                online_defense=scenario["online_defense"],
-            )
-            scenario_assessments.append({"scenario": scenario, "assessment": assessment})
+        pattern_guesses, guessability = precompute_password_models(password, entropy)
+        fastest_offline = slowest_offline = None
+        fastest_online = slowest_online = None
 
-        fastest_offline = min(
-            scenario_assessments,
-            key=lambda x: x["assessment"]["offline_conservative"]["expected_seconds"],
-        )
-        slowest_offline = max(
-            scenario_assessments,
-            key=lambda x: x["assessment"]["offline_conservative"]["expected_seconds"],
-        )
-        fastest_online = min(
-            scenario_assessments,
-            key=lambda x: x["assessment"]["online_conservative"]["expected_seconds"],
-        )
-        slowest_online = max(
-            scenario_assessments,
-            key=lambda x: x["assessment"]["online_conservative"]["expected_seconds"],
-        )
+        for scenario in scenarios:
+            assessment = build_attack_assessment_with_components(
+                entropy=entropy,
+                offline_rate=scenario["offline_rate"],
+                online_rate=scenario["online_rate"],
+                pattern_guesses=pattern_guesses,
+                guessability=guessability,
+            )
+            item = {"scenario": scenario, "assessment": assessment}
+
+            if (
+                fastest_offline is None
+                or assessment["offline_conservative"]["expected_seconds"]
+                < fastest_offline["assessment"]["offline_conservative"]["expected_seconds"]
+            ):
+                fastest_offline = item
+            if (
+                slowest_offline is None
+                or assessment["offline_conservative"]["expected_seconds"]
+                > slowest_offline["assessment"]["offline_conservative"]["expected_seconds"]
+            ):
+                slowest_offline = item
+            if (
+                fastest_online is None
+                or assessment["online_conservative"]["expected_seconds"]
+                < fastest_online["assessment"]["online_conservative"]["expected_seconds"]
+            ):
+                fastest_online = item
+            if (
+                slowest_online is None
+                or assessment["online_conservative"]["expected_seconds"]
+                > slowest_online["assessment"]["online_conservative"]["expected_seconds"]
+            ):
+                slowest_online = item
 
         strength = get_strength_label(
             password,

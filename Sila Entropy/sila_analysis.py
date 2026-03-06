@@ -4,6 +4,8 @@ from sila_config import (
     DEFAULT_ATTACKER_PROFILE,
     DEFAULT_HASH_PROFILE,
     DEFAULT_ONLINE_DEFENSE,
+    LEET_MAP,
+    LOCAL_THREAT_TERMS,
     NIST_MIN_LENGTH,
 )
 from sila_models import (
@@ -60,34 +62,41 @@ def get_strength_label(password, entropy, leak_result, conservative_offline_seco
 
 
 def contains_khmer_dictionary_term(password, khmer_dict):
-    """Detect Khmer dictionary terms using token-based matching."""
-    if not khmer_dict:
+    """Detect local threat terms using token-based matching."""
+    local_terms = set(LOCAL_THREAT_TERMS)
+    dictionaries = set(local_terms)
+    if khmer_dict:
+        dictionaries.update(khmer_dict)
+    if not dictionaries:
         return False
 
-    lowered = password.lower()
-    tokens = [t for t in re.split(r"[^\w\u1780-\u17FF]+", lowered) if t]
-    return any(token in khmer_dict for token in tokens)
+    normalized = password.lower().translate(LEET_MAP)
+    tokens = [t for t in re.split(r"[^\w\u1780-\u17FF]+", normalized) if t]
+    if any(token in dictionaries for token in tokens):
+        return True
+    # Fallback substring check for compact variants like "phnompenhcity".
+    return any(term in normalized for term in local_terms if len(term) >= 5)
 
 
-def build_attack_assessment(
-    password,
+def precompute_password_models(password, entropy):
+    """Compute model inputs once and reuse across scenario permutations."""
+    pattern_guesses = estimate_pattern_guess_window(password, entropy)
+    guessability = estimate_guessability_guess_window(password, pattern_guesses)
+    return pattern_guesses, guessability
+
+
+def build_attack_assessment_with_components(
     entropy,
-    hash_profile=DEFAULT_HASH_PROFILE,
-    attacker_profile=DEFAULT_ATTACKER_PROFILE,
-    online_defense=DEFAULT_ONLINE_DEFENSE,
+    offline_rate,
+    online_rate,
+    pattern_guesses,
+    guessability,
 ):
-    """Compute random/pattern/conservative attack windows."""
-    offline_rate = get_offline_guesses_per_second(
-        hash_profile=hash_profile, attacker_profile=attacker_profile
-    )
-    online_rate = get_online_guesses_per_second(defense_profile=online_defense)
-
+    """Build attack assessment from precomputed model components."""
     offline_random = calculate_bruteforce_window(entropy, offline_rate)
     online_random = calculate_bruteforce_window(entropy, online_rate)
-    pattern_guesses = estimate_pattern_guess_window(password, entropy)
     offline_pattern = guesses_to_time_window(pattern_guesses, offline_rate)
     online_pattern = guesses_to_time_window(pattern_guesses, online_rate)
-    guessability = estimate_guessability_guess_window(password, pattern_guesses)
     offline_guessability = guesses_to_time_window(guessability, offline_rate)
     online_guessability = guesses_to_time_window(guessability, online_rate)
     offline_conservative = get_conservative_window(
@@ -119,6 +128,29 @@ def build_attack_assessment(
         "online_conservative": online_conservative,
         "model_driver": model_driver,
     }
+
+
+def build_attack_assessment(
+    password,
+    entropy,
+    hash_profile=DEFAULT_HASH_PROFILE,
+    attacker_profile=DEFAULT_ATTACKER_PROFILE,
+    online_defense=DEFAULT_ONLINE_DEFENSE,
+):
+    """Compute random/pattern/conservative attack windows."""
+    offline_rate = get_offline_guesses_per_second(
+        hash_profile=hash_profile, attacker_profile=attacker_profile
+    )
+    online_rate = get_online_guesses_per_second(defense_profile=online_defense)
+    pattern_guesses, guessability = precompute_password_models(password, entropy)
+
+    return build_attack_assessment_with_components(
+        entropy=entropy,
+        offline_rate=offline_rate,
+        online_rate=online_rate,
+        pattern_guesses=pattern_guesses,
+        guessability=guessability,
+    )
 
 
 def estimate_guessability_guess_window(password, pattern_guesses):
